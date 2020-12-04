@@ -112,35 +112,66 @@ function saveEAData($browser, $accountNumber, $period) {
 	}
 }
 
-function MergeData($period) {
+function mergeData($period) {
 	$result = array();
 
 	foreach ($period as $key => $value) {
 		$date = $value->format('Y-m-d');
 
-		$hourlyfilepath = "./data/hourly/".$date.".json";
-		$eafilepath = "./data/ea/".$date.'.json';
 
-		$solarKw = json_decode(file_get_contents($hourlyfilepath), true);
+		$mergedpath = "./data/merged/".$date.'.json';
+		$json = json_decode(file_get_contents($mergedpath), true);;
 
-		if($solarKw) {
-			$ea = json_decode(file_get_contents($eafilepath), true);
+		if($json ) {
+			array_push($result, $json );
 
-			$day = array();
+		} else {
+			$hourlyfilepath = "./data/hourly/".$date.".json";
+			$eafilepath = "./data/ea/".$date.'.json';
 
-			foreach ($ea as $i) {
-				$hour = $i['interval'];
-				$solar = $solarKw[$hour];
-				$day[$hour] = array(
-						"interval" => $hour,
-						"bought" =>  $i['consumption'],
-						"sold" => - $i['soldToGrid'],
-						"produced" => $solar,
-						"consumed" => - $i['consumption'] - ( $solar - $i['soldToGrid'])
+			$solarKw = json_decode(file_get_contents($hourlyfilepath), true);
+
+			if($solarKw) {
+				$ea = json_decode(file_get_contents($eafilepath), true);
+
+				$day = array();
+
+				$sums =  array(
+					"interval" => 0,
+					"bought" =>  0,
+					"sold" => 0,
+					"produced" => 0,
+					"consumed" => 0
 				);
-			}
 
-			array_push($result, array( "date"=> $date, "data"=> $day  ));
+				foreach ($ea as $i) {
+					$hour = $i['interval'];
+					$solar = $solarKw[$hour];
+					$sold = - $i['soldToGrid'];
+					$bought = $i['consumption'];
+					$consumed = - $bought - ($solar + $sold);
+
+					$sums = array(
+						"interval" => $sums["interval"] + $hour,
+						"bought" =>  $sums["bought"] + $bought,
+						"sold" => $sums["sold"] + $sold,
+						"produced" => $sums["produced"] + $solar,
+						"consumed" => $sums["consumed"] + $consumed 
+					);
+
+					$day[$hour] = array(
+							"interval" => $hour,
+							"bought" =>  $bought,
+							"sold" => $sold,
+							"produced" => $solar,
+							"consumed" => $consumed 
+					);
+				}
+
+				$data = array( "date"=> $date, "data"=> $day, "sum" => $sums  );
+				file_put_contents($mergedpath, json_encode($data));
+				array_push($result, $data);
+			}
 		}
 	}
 	return $result;

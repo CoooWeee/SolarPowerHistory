@@ -34,22 +34,22 @@ function showGraph() {
 						labels: interval,
 						datasets: [
 							{
-								label: 'produced',
+								label: 'produced (' + Math.round(db["sum"]["produced"]) + 'kW)',
 								backgroundColor: '#519944',
 								data: produced,
 							},
 							{
-								label: 'bought',
+								label: 'bought (' + Math.round(db["sum"]["bought"]) + 'kW)',
 								backgroundColor: '#EC1B14',
 								data: bought,
 							},
 							{
-								label: 'estimated consumption',
+								label: 'estimated consumption (' + Math.round(db["sum"]["consumed"]) + 'kW)',
 								backgroundColor: '#DCDB46',
 								data: consumed,
 							},
 							{
-								label: 'sold',
+								label: 'sold (' + Math.round(db["sum"]["sold"]) + 'kW)',
 								backgroundColor: '#2482E8',
 								data: sold,
 							},
