@@ -2,7 +2,7 @@ $(document).ready(function () {
 	showGraphs();
 });
 
-function createGraph(chartdata, title, id, onlyPos) {
+function createGraph(chartdata, title, id, today) {
 	let container = document.createElement("div");
 
 	let para = document.createElement("p");
@@ -14,7 +14,7 @@ function createGraph(chartdata, title, id, onlyPos) {
 	canvas.setAttribute("id", "canvas" + id);
 	container.appendChild(canvas);
 
-	let element = document.getElementById("chart-container");
+	let element = document.getElementById(today ? "today-container" : "chart-container");
 	element.appendChild(container);
 
 
@@ -32,7 +32,7 @@ function createGraph(chartdata, title, id, onlyPos) {
 						steps: 20,
 						stepValue: 1,
 						max: 10,
-						min: onlyPos ? 0 : -10,
+						min: today ? 0 : -10,
 					}
 				}]
 			}
