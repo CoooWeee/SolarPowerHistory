@@ -1,9 +1,14 @@
 $(document).ready(function () {
 	showGraphs();
+
+	updateToday();
+	setInterval(() => { updateToday(); }, 30000);
 });
 
 function createGraph(chartdata, title, id, today) {
 	let container = document.createElement("div");
+	const htmlId = "output" + id;
+	container.setAttribute("id", htmlId);
 
 	let para = document.createElement("p");
 	let node = document.createTextNode(title);
@@ -15,6 +20,12 @@ function createGraph(chartdata, title, id, today) {
 	container.appendChild(canvas);
 
 	let element = document.getElementById(today ? "today-container" : "chart-container");
+
+	// today might already exist
+	if (document.contains(document.getElementById(htmlId))) {
+		document.getElementById(htmlId).remove();
+	}
+
 	element.appendChild(container);
 
 
@@ -29,7 +40,7 @@ function createGraph(chartdata, title, id, today) {
 				yAxes: [{
 					stacked: true,
 					ticks: {
-						steps: 20,
+						steps: today ? 10 : 20,
 						stepValue: 1,
 						max: 10,
 						min: today ? 0 : -10,
@@ -40,25 +51,28 @@ function createGraph(chartdata, title, id, today) {
 	});
 }
 
+function updateToday() {
+	$.post("Live.php",
+		function (db) {
+			if (!db) {
+				return;
+			}
+			let chartdata = {
+				labels: Object.keys(db),
+				datasets: [
+					{
+						label: 'produced (' + Math.round(Object.values(db).reduce((a, b) => a + b)) + 'kW)',
+						backgroundColor: '#519944',
+						data: Object.values(db),
+					}
+				]
+			};
+			createGraph(chartdata, "Today", "Today", true);
+		});
+}
+
 function showGraphs() {
 	{
-		$.post("Live.php",
-			function (db) {
-				if(!db) {
-					return;
-				}
-				let chartdata = {
-					labels: Object.keys(db),
-					datasets: [
-						{
-							label: 'produced (' + Math.round(Object.values(db).reduce((a, b) => a + b)) + 'kW)',
-							backgroundColor: '#519944',
-							data: Object.values(db),
-						}
-					]
-				};
-				createGraph(chartdata, "Today", "Today", true);
-			});
 		$.post("Data.php",
 			function (dbs) {
 				for (let n = dbs.length - 1; n >= 0; n--) {
