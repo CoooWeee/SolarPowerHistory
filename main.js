@@ -1,10 +1,64 @@
 $(document).ready(function () {
-	showGraph();
+	showGraphs();
 });
 
+function createGraph(chartdata, title, id, onlyPos) {
+	let container = document.createElement("div");
 
-function showGraph() {
+	let para = document.createElement("p");
+	let node = document.createTextNode(title);
+	para.appendChild(node);
+	container.appendChild(node);
+
+	let canvas = document.createElement("canvas");
+	canvas.setAttribute("id", "canvas" + id);
+	container.appendChild(canvas);
+
+	let element = document.getElementById("chart-container");
+	element.appendChild(container);
+
+
+	let graphTarget = $("#canvas" + id);
+
+	let barGraph = new Chart(graphTarget, {
+		type: 'bar',
+		data: chartdata,
+		options: {
+			scales: {
+				xAxes: [{ stacked: true }],
+				yAxes: [{
+					stacked: true,
+					ticks: {
+						steps: 20,
+						stepValue: 1,
+						max: 10,
+						min: onlyPos ? 0 : -10,
+					}
+				}]
+			}
+		}
+	});
+}
+
+function showGraphs() {
 	{
+		$.post("Live.php",
+			function (db) {
+				if(!db) {
+					return;
+				}
+				let chartdata = {
+					labels: Object.keys(db),
+					datasets: [
+						{
+							label: 'produced (' + Math.round(Object.values(db).reduce((a, b) => a + b)) + 'kW)',
+							backgroundColor: '#519944',
+							data: Object.values(db),
+						}
+					]
+				};
+				createGraph(chartdata, "Today", "Today", true);
+			});
 		$.post("Data.php",
 			function (dbs) {
 				for (let n = dbs.length - 1; n >= 0; n--) {
@@ -19,7 +73,6 @@ function showGraph() {
 					let consumed = [];
 
 					let readDate = db["date"];
-					console.log(readDate);
 					const data = db["data"];
 
 					for (let i in data) {
@@ -56,43 +109,7 @@ function showGraph() {
 						]
 					};
 
-
-					let container = document.createElement("div");
-
-					let para = document.createElement("p");
-					let node = document.createTextNode(readDate);
-					para.appendChild(node);
-					container.appendChild(node);
-
-					let canvas = document.createElement("canvas");
-					canvas.setAttribute("id", "canvas" + n);
-					container.appendChild(canvas);
-
-					let element = document.getElementById("chart-container");
-					element.appendChild(container);
-
-
-					let graphTarget = $("#canvas" + n);
-
-					let barGraph = new Chart(graphTarget, {
-						type: 'bar',
-						data: chartdata,
-						options: {
-							scales: {
-								xAxes: [{ stacked: true }],
-								yAxes: [{
-									stacked: true,
-									// set this to your max kW (my is 10kW)
-									// ticks: {
-									// 	steps: 20,
-									// 	stepValue: 1,
-									// 	max: 10,
-									// 	min: -10,
-									// }
-								}]
-							}
-						}
-					});
+					createGraph(chartdata, readDate, n);
 				}
 			});
 	}
