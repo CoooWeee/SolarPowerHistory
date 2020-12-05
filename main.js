@@ -94,12 +94,12 @@ function updateToday() {
 				fiveSecondDay.push(i);
 			}
 			let chartdata = {
-				labels: fiveSecondDay.map((v, index) => v),
+				labels: fiveSecondDay.map((v, index) => Math.round(v / 60 / 60 * 100) / 100),
 				datasets: [
 					{
 						label: 'produced (' + Math.round(Object.values(db).reduce((a, b) => a + b) / 12) / 1000 + 'kW)',
-						backgroundColor: "rgba(75,192,192,0.4)",
-						borderColor: "rgba(75,192,192,1)",
+						backgroundColor: "rgba(81,153,68,1)",
+						borderColor: "rgba(81,153,68,0.4)",
 						fill: true,
 						pointRadius: 1,
 						borderWidth: 2,
@@ -122,7 +122,14 @@ function updateToday() {
 						duration: 0
 					},
 					scales: {
-						xAxes: [],
+						xAxes: [{
+							ticks: {
+								steps: 25,
+								stepValue: 1,
+								max: 24,
+								min: 0,
+							}
+						}],
 						yAxes: [{
 							ticks: {
 								steps: 11,
