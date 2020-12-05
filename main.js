@@ -1,9 +1,8 @@
 $(document).ready(function () {
 	showGraphs();
 
-
 	updateLive();
-	setInterval(() => { updateLive(); }, 5000);
+	setInterval(() => { updateLive(); }, 10000);
 
 	updateToday();
 	setInterval(() => { updateToday(); }, 30000);
@@ -90,18 +89,31 @@ function updateToday() {
 			if (!db) {
 				return;
 			}
+			const fiveSecondDay = [];
+			for (var i = 0; i <= 86400; i = i + 5) {
+				fiveSecondDay.push(i);
+			}
 			let chartdata = {
-				labels: Object.keys(db),
+				labels: fiveSecondDay.map((v, index) => v),
 				datasets: [
 					{
-						label: 'produced (' + Math.round(Object.values(db).reduce((a, b) => a + b)) + 'kW)',
-						backgroundColor: '#519944',
-						data: Object.values(db),
+						label: 'produced (' + Math.round(Object.values(db).reduce((a, b) => a + b) / 12) / 1000 + 'kW)',
+						backgroundColor: "rgba(75,192,192,0.4)",
+						borderColor: "rgba(75,192,192,1)",
+						fill: true,
+						pointRadius: 1,
+						borderWidth: 2,
+						showLine: true,
+						spanGaps: true,
+						data: fiveSecondDay.map((v, index) =>
+							(db.hasOwnProperty(v + '')
+								&& db[v] / 1000) || undefined
+						),
 					}
 				]
 			};
 			createGraph({
-				type: 'bar',
+				type: 'line',
 				data: chartdata,
 				options: {
 					responsive: true,
@@ -110,13 +122,12 @@ function updateToday() {
 						duration: 0
 					},
 					scales: {
-						xAxes: [{ stacked: true }],
+						xAxes: [],
 						yAxes: [{
-							stacked: true,
 							ticks: {
-								steps: 10,
+								steps: 11,
 								stepValue: 1,
-								max: 10,
+								max: 10.5,
 								min: 0,
 							}
 						}]
@@ -182,6 +193,8 @@ function showGraphs() {
 						type: 'bar',
 						data: chartdata,
 						options: {
+							responsive: true,
+							maintainAspectRatio: false,
 							scales: {
 								xAxes: [{ stacked: true }],
 								yAxes: [{

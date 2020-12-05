@@ -4,6 +4,10 @@ error_reporting(0);
 
 function get($url) {
 	$ch = curl_init(); 
+	curl_setopt($ch, CURLOPT_FRESH_CONNECT, TRUE);
+	curl_setopt($ch,CURLOPT_HTTPHEADER, array(
+					"cache-control: no-cache"
+	));
 	curl_setopt($ch, CURLOPT_URL, $url); 
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
 	$output = curl_exec($ch); 
@@ -26,18 +30,18 @@ if(!$inverterResult){
 	exit();
 }
 
-$hourlyData = array(
-	0  => 0, 1  => 0, 2  => 0, 3  => 0, 4  => 0, 5  => 0, 6  => 0, 7  => 0, 8  => 0, 9  => 0, 10 => 0, 11 => 0, 
-	12 => 0, 13 => 0, 14 => 0, 15 => 0, 16 => 0, 17 => 0, 18 => 0, 19 => 0, 20 => 0, 21 => 0, 22 => 0, 23 => 0
-);
+// $hourlyData = array(
+// 	0  => 0, 1  => 0, 2  => 0, 3  => 0, 4  => 0, 5  => 0, 6  => 0, 7  => 0, 8  => 0, 9  => 0, 10 => 0, 11 => 0, 
+// 	12 => 0, 13 => 0, 14 => 0, 15 => 0, 16 => 0, 17 => 0, 18 => 0, 19 => 0, 20 => 0, 21 => 0, 22 => 0, 23 => 0
+// );
 
-foreach ((array) $inverterResult as $k => $v) {
-	if($v > 0) {
-		$hour = floor($k/60/60);
-		$hourlyData[$hour] = $hourlyData[$hour] + ($v/12/1000);
-	}
-}
+// foreach ((array) $inverterResult as $k => $v) {
+// 	if($v > 0) {
+// 		$hour = floor($k/60/60);
+// 		$hourlyData[$hour] = $hourlyData[$hour] + ($v/12/1000);
+// 	}
+// }
 
 
-echo json_encode($hourlyData);
+echo json_encode($inverterResult);
 ?>
