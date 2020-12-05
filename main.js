@@ -1,13 +1,17 @@
 $(document).ready(function () {
 	showGraphs();
 
+
+	updateLive();
+	setInterval(() => { updateLive(); }, 5000);
+
 	updateToday();
 	setInterval(() => { updateToday(); }, 30000);
 });
 
-function createGraph(chartdata, title, id, today) {
+function createGraph(chart, title, contrainerId) {
 	let container = document.createElement("div");
-	const htmlId = "output" + id;
+	const htmlId = "output" + title;
 	container.setAttribute("id", htmlId);
 
 	let para = document.createElement("p");
@@ -16,10 +20,10 @@ function createGraph(chartdata, title, id, today) {
 	container.appendChild(node);
 
 	let canvas = document.createElement("canvas");
-	canvas.setAttribute("id", "canvas" + id);
+	canvas.setAttribute("id", "canvas" + title);
 	container.appendChild(canvas);
 
-	let element = document.getElementById(today ? "today-container" : "chart-container");
+	let element = document.getElementById(contrainerId);
 
 	// today might already exist
 	if (document.contains(document.getElementById(htmlId))) {
@@ -29,30 +33,59 @@ function createGraph(chartdata, title, id, today) {
 	element.appendChild(container);
 
 
-	let graphTarget = $("#canvas" + id);
+	let graphTarget = $("#canvas" + title);
 
-	let barGraph = new Chart(graphTarget, {
-		type: 'bar',
-		data: chartdata,
-		options: {
-			scales: {
-				xAxes: [{ stacked: true }],
-				yAxes: [{
-					stacked: true,
-					ticks: {
-						steps: today ? 10 : 20,
-						stepValue: 1,
-						max: 10,
-						min: today ? 0 : -10,
-					}
-				}]
+	return new Chart(graphTarget, chart);
+}
+
+function updateLive() {
+	$.post("Live.php",
+		function (db) {
+			if (!db) {
+				return;
 			}
-		}
-	});
+			const kw = db["PAC"]["Values"]["1"] / 1000;
+			let chartdata = {
+				labels: ['Live'],
+				datasets: [
+					{
+						label: kw + 'kW',
+						backgroundColor: '#519944',
+						data: [kw],
+					}
+				]
+			};
+			createGraph({
+				type: 'horizontalBar',
+				data: chartdata,
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					animation: {
+						duration: 0
+					},
+					scales: {
+						xAxes: [{
+							stacked: false,
+							ticks: {
+								steps: 10,
+								stepValue: 1,
+								max: 10,
+								min: 0,
+							}
+						}],
+						yAxes: [{
+							stacked: false,
+
+						}]
+					}
+				}
+			}, "Live", "live-container");
+		});
 }
 
 function updateToday() {
-	$.post("Live.php",
+	$.post("Today.php",
 		function (db) {
 			if (!db) {
 				return;
@@ -67,7 +100,29 @@ function updateToday() {
 					}
 				]
 			};
-			createGraph(chartdata, "Today", "Today", true);
+			createGraph({
+				type: 'bar',
+				data: chartdata,
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					animation: {
+						duration: 0
+					},
+					scales: {
+						xAxes: [{ stacked: true }],
+						yAxes: [{
+							stacked: true,
+							ticks: {
+								steps: 10,
+								stepValue: 1,
+								max: 10,
+								min: 0,
+							}
+						}]
+					}
+				}
+			}, "Today", "today-container");
 		});
 }
 
@@ -123,7 +178,24 @@ function showGraphs() {
 						]
 					};
 
-					createGraph(chartdata, readDate, n);
+					createGraph({
+						type: 'bar',
+						data: chartdata,
+						options: {
+							scales: {
+								xAxes: [{ stacked: true }],
+								yAxes: [{
+									stacked: true,
+									ticks: {
+										steps: 20,
+										stepValue: 1,
+										max: 10,
+										min: -10,
+									}
+								}]
+							}
+						}
+					}, readDate, "chart-container");
 				}
 			});
 	}

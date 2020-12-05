@@ -7,6 +7,27 @@
 	<style type="text/css">
 		BODY {
 			width: 100%;
+			overflow-x: hidden;
+		}
+
+		#canvasLive {
+			height: 3vh;
+			position: relative;
+		}
+
+		#canvasToday {
+			height: 12vh;
+			position: relative;
+		}
+
+		#live-container {
+			width: 100%;
+			height: auto;
+		}
+
+		#today-container {
+			width: 100%;
+			height: auto;
 		}
 
 		#chart-container {
@@ -21,6 +42,8 @@
 </head>
 
 <body>
+	<div id="live-container">
+	</div>
 	<div id="today-container">
 	</div>
 	<div id="chart-container">
