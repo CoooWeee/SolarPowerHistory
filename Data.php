@@ -151,20 +151,24 @@ function mergeData($period) {
 					$bought = $i['consumption'];
 					$consumed = - $bought - ($solar + $sold);
 
+					// EA does not return null for missing values
+					// it is quite unlikely that I will not buy or sell anything.
+					$hasData = $bought != 0 || $sold != 0;
+
 					$sums = array(
 						"interval" => $sums["interval"] + $hour,
 						"bought" =>  $sums["bought"] + $bought,
 						"sold" => $sums["sold"] + $sold,
 						"produced" => $sums["produced"] + $solar,
-						"consumed" => $sums["consumed"] + $consumed 
+						"consumed" => $sums["consumed"] + ($hasData ? $consumed : 0)
 					);
 
 					$day[$hour] = array(
 							"interval" => $hour,
-							"bought" =>  $bought,
-							"sold" => $sold,
+							"bought" =>  $hasData ? $bought : null,
+							"sold" => $hasData ?  $sold : null,
 							"produced" => $solar,
-							"consumed" => $consumed 
+							"consumed" => $hasData ? $consumed : null
 					);
 				}
 
