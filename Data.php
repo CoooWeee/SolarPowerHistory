@@ -13,31 +13,38 @@ require_once 'HttpRequester.php';
 $browser = new HttpRequester;
 $browser->postfollowredirs = true;
 
-function login($browser, $username, $password) {
-	return $browser->post(
+function login($username, $password) {
+	return $GLOBALS['browser']->post(
 		'https://www.energyaustralia.com.au/myaccount/login',
 		"username=".$username."&password=".$password
 	);
 }
 
-function getPeriod($browser, $accountNumber) {
-	$response = $browser->get(
-		"https://www.energyaustralia.com.au/myaccount/api/usage/".$accountNumber."/summary?meterType=SMART_MANUAL"
+function getPeriod() {
+	$response = $GLOBALS['browser']->get(
+		"https://www.energyaustralia.com.au/myaccount/api/usage/".$GLOBALS['accountNumber']."/summary?meterType=SMART_MANUAL"
 	);
 
-	$dates = [$response["earliestDataDate"] , $response["latestDataDate"] ];
+	if($response == null) {
+		$startDate = new DateTime($GLOBALS['fallbackStartDate']);
+		$endDate = new DateTime(date("Y-m-d"));
+		$endDate->modify('-2 day');
+	} else {
+		$dates = [$response["earliestDataDate"] , $response["latestDataDate"] ];
+		$startDate = new DateTime(implode("-", $dates[0]));
+		$endDate = new DateTime(implode("-", $dates[1]));
+		$endDate->modify('+1 day');
+	}
 
-	$endDate = new DateTime(implode("-", $dates[1]));
-	$endDate->modify('+1 day');
 
 	return new DatePeriod(
-		new DateTime(implode("-", $dates[0])),
+		$startDate,
 		new DateInterval('P1D'),
 		$endDate
 	);
 }
 
-function saveInverterData($browser, $inverterIp, $period) {
+function saveInverterData($period) {
 	foreach ($period as $key => $value) {
 		$date = $value->format('Y-m-d');
 	
@@ -45,8 +52,8 @@ function saveInverterData($browser, $inverterIp, $period) {
 		$json_string = file_get_contents($filepath);
 	
 		if ($json_string === false) {
-			$result = $browser->get(
-				"http://".$inverterIp."/solar_api/v1/GetArchiveData.cgi?Scope=Device&DeviceClass=Inverter&StartDate=".$date."&EndDate=".$date."&DeviceId=1&Channel=TimeSpanInSec&Channel=EnergyReal_WAC_Sum_Produced&Channel=EnergyReal_WAC_Sum_Consumed&Channel=InverterEvents&Channel=InverterErrors&Channel=Current_DC_String_1&Channel=Current_DC_String_2&Channel=Voltage_DC_String_1&Channel=Voltage_DC_String_2&Channel=Temperature_Powerstage&Channel=Voltage_AC_Phase_1&Channel=Voltage_AC_Phase_2&Channel=Voltage_AC_Phase_3&Channel=Current_AC_Phase_1&Channel=Current_AC_Phase_2&Channel=Current_AC_Phase_3&Channel=PowerReal_PAC_Sum&Channel=EnergyReal_WAC_Minus_Absolute&Channel=EnergyReal_WAC_Plus_Absolute&Channel=Meter_Location_Current&Channel=Temperature_Channel_1&Channel=Temperature_Channel_2&Channel=Digital_Channel_1&Channel=Digital_Channel_2&Channel=Radiation&Channel=Digital_PowerManagementRelay_Out_1&Channel=Digital_PowerManagementRelay_Out_2&Channel=Digital_PowerManagementRelay_Out_3&Channel=Digital_PowerManagementRelay_Out_4"
+			$result = $GLOBALS['browser']->get(
+				"http://".$GLOBALS['inverterIp']."/solar_api/v1/GetArchiveData.cgi?Scope=Device&DeviceClass=Inverter&StartDate=".$date."&EndDate=".$date."&DeviceId=1&Channel=TimeSpanInSec&Channel=EnergyReal_WAC_Sum_Produced&Channel=EnergyReal_WAC_Sum_Consumed&Channel=InverterEvents&Channel=InverterErrors&Channel=Current_DC_String_1&Channel=Current_DC_String_2&Channel=Voltage_DC_String_1&Channel=Voltage_DC_String_2&Channel=Temperature_Powerstage&Channel=Voltage_AC_Phase_1&Channel=Voltage_AC_Phase_2&Channel=Voltage_AC_Phase_3&Channel=Current_AC_Phase_1&Channel=Current_AC_Phase_2&Channel=Current_AC_Phase_3&Channel=PowerReal_PAC_Sum&Channel=EnergyReal_WAC_Minus_Absolute&Channel=EnergyReal_WAC_Plus_Absolute&Channel=Meter_Location_Current&Channel=Temperature_Channel_1&Channel=Temperature_Channel_2&Channel=Digital_Channel_1&Channel=Digital_Channel_2&Channel=Radiation&Channel=Digital_PowerManagementRelay_Out_1&Channel=Digital_PowerManagementRelay_Out_2&Channel=Digital_PowerManagementRelay_Out_3&Channel=Digital_PowerManagementRelay_Out_4"
 			);
 	
 			if($result !== null) {
@@ -92,7 +99,7 @@ function convertInverterDataToHourly($period) {
 	}
 }
 
-function saveEAData($browser, $accountNumber, $period) {
+function saveEAData( $period) {
 	foreach ($period as $key => $value) {
 		$date = $value->format('Y-m-d');
 	
@@ -100,8 +107,8 @@ function saveEAData($browser, $accountNumber, $period) {
 		$json_string = file_get_contents($filepath);
 	
 		if ($json_string === false) {
-			$result = $browser->get(
-				"https://www.energyaustralia.com.au/myaccount/api/usage/".$accountNumber."/hourly?forDay=".$date."&ts=" . time()
+			$result = $GLOBALS['browser']->get(
+				"https://www.energyaustralia.com.au/myaccount/api/usage/".$GLOBALS['accountNumber']."/hourly?forDay=".$date."&ts=" . time()
 			)[0];
 	
 			if($result !== null) {
@@ -130,10 +137,9 @@ function mergeData($period) {
 			$eafilepath = "./data/ea/".$date.'.json';
 
 			$solarKw = json_decode(file_get_contents($hourlyfilepath), true);
+			$ea = json_decode(file_get_contents($eafilepath), true);
 
-			if($solarKw) {
-				$ea = json_decode(file_get_contents($eafilepath), true);
-
+			if($solarKw && $ea) {
 				$day = array();
 
 				$sums =  array(
@@ -171,23 +177,24 @@ function mergeData($period) {
 							"consumed" => $hasData ? $consumed : null
 					);
 				}
-
 				$data = array( "date"=> $date, "data"=> $day, "sum" => $sums  );
 				file_put_contents($mergedpath, json_encode($data));
 				array_push($result, $data);
+
 			}
 		}
 	}
 	return $result;
 }
 
-login($browser, $username, $password);
-$period = getPeriod($browser, $accountNumber);
-saveEAData($browser, $accountNumber, $period);
-saveInverterData($browser, $inverterIp, $period);
+login( $username, $password);
+$period = getPeriod();
+saveEAData( $period);
+saveInverterData( $period);
 convertInverterDataToHourly($period);
-$result = MergeData($period);
+$result = mergeData($period);
 
 echo json_encode($result);
+
 
 ?>
