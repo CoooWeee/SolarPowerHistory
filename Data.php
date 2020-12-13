@@ -7,6 +7,7 @@ $accountNumber = "<energy australia costumer id>";
 $username = "<energy australia email>";
 $password = "<energy australia password>";
 $inverterIp = "<fronius ip/name>";
+$fallbackStartDate = "<first date to fetch data>";
 
 // http init
 require_once 'HttpRequester.php';
