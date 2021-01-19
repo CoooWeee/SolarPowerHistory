@@ -1,19 +1,20 @@
 $(document).ready(function () {
 	window.setTimeout(function () {
 		updateLive();
-		setInterval(() => { updateLive(); }, 10000);
-	}, 500);
-
+	}, 100);
 
 	window.setTimeout(function () {
 		updateToday();
-		setInterval(() => { updateToday(); }, 30000);
-	}, 700);
-
+	}, 200);
 
 	window.setTimeout(function () {
 		showGraphs();
-	}, 1000);
+	}, 2000);
+
+	window.setTimeout(function () {
+		setInterval(() => { updateLive(); }, 10000);
+		setInterval(() => { updateToday(); }, 30000);
+	}, 5000);
 });
 
 function createGraph(chart, title, containerId) {
@@ -233,7 +234,7 @@ function showGraph(dbs, n) {
 
 
 		showGraph(dbs, n - 1);
-	}, 500 * (dbs.length - n));
+	}, 1000);
 }
 
 
